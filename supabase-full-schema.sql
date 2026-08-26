@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   role TEXT NOT NULL DEFAULT 'kreatif',
   avatar_url TEXT,
   is_active BOOLEAN DEFAULT true,
+  needs_password_change BOOLEAN DEFAULT true,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );

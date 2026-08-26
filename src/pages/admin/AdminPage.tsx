@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { supabase } from '../../lib/supabase';
+import { supabaseAdmin } from '../../lib/supabase-admin';
 import { Plus, Trash2, X } from 'lucide-react';
 
 const roleOptions = [
@@ -61,7 +62,7 @@ export default function AdminPage() {
 
     // Create auth user with a temporary password
     const tempPassword = 'Nalar@' + Math.random().toString(36).slice(-6);
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: form.email,
       password: tempPassword,
       email_confirm: true,
@@ -79,6 +80,7 @@ export default function AdminPage() {
       full_name: form.full_name,
       role: form.role,
       is_active: true,
+      needs_password_change: true,
     });
 
     if (profileError) {
@@ -95,7 +97,7 @@ export default function AdminPage() {
   async function handleDeleteUser(id: string) {
     if (!confirm('Yakin ingin menghapus user ini?')) return;
     await supabase.from('profiles').delete().eq('id', id);
-    await supabase.auth.admin.deleteUser(id);
+    await supabaseAdmin.auth.admin.deleteUser(id);
     loadUsers();
   }
 

@@ -7,6 +7,7 @@ export interface User {
   role: UserRole;
   avatar?: string;
   isActive?: boolean;
+  needsPasswordChange?: boolean;
 }
 
 export interface Profile {
@@ -16,6 +17,7 @@ export interface Profile {
   role: UserRole;
   avatar_url?: string;
   is_active: boolean;
+  needs_password_change?: boolean;
   created_at: string;
   updated_at: string;
 }

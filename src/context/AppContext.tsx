@@ -65,6 +65,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         role: data.role as UserRole,
         avatar: data.avatar_url,
         isActive: data.is_active,
+        needsPasswordChange: data.needs_password_change,
       });
     }
     setIsLoading(false);

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { Eye, EyeOff, Lock, Mail, Shield } from 'lucide-react';
 
@@ -112,8 +112,7 @@ export default function LoginPage() {
           </form>
 
           <p className="mt-6 text-center text-sm text-gray-500">
-            Belum punya akun?{' '}
-            <Link to="/register" className="text-blue-600 hover:text-blue-700 font-medium">Daftar</Link>
+            Hubungi COO untuk membuat akun baru.
           </p>
         </div>
       </div>
