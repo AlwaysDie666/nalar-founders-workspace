@@ -1,16 +1,16 @@
 # PRD - Nalar Founder Workspace
 
-**Version**: 1.0 | **Date**: August 2026
+**Version**: 2.0 | **Date**: August 2026
 
 ## Overview
-Web application internal untuk tim founder Nalar Group. Command center harian untuk mengelola tugas, proyek, keuangan, komunikasi, dan reporting. Bukan produk untuk dijual, tapi alat kerja tim.
+Web application internal untuk tim founder Nalar Group. Command center harian untuk mengelola tugas, proyek, keuangan, dan reporting. Bukan produk untuk dijual, tapi alat kerja tim.
 
 ## Users & Roles
 
 | Role | Akses |
 |------|-------|
-| COO | Full Admin: manage users, approve, settings |
-| CEO | Strategic: full data access, approve transaksi |
+| COO | Full Admin: manage users, approve, settings, laporan mingguan |
+| CEO | Strategic: full data access, approve transaksi, laporan mingguan |
 | CTO | Technical: tech tasks, infra, development |
 | CPO | Product: product tasks, roadmap, feature |
 | CMO | Marketing: marketing tasks, campaign |
@@ -18,11 +18,10 @@ Web application internal untuk tim founder Nalar Group. Command center harian un
 | Kreatif | Creative: tugas kreatif, asset, design |
 
 ## User Management Flow
-1. COO undang user baru via email
-2. User terima invitation dari Supabase
-3. User buat akun (set password)
-4. COO assign role
-5. User login dan akses workspace
+1. COO undang user baru via register page
+2. User daftar akun dengan email & password
+3. COO assign role
+4. User login dan akses workspace
 
 ## Core Modules
 1. Dashboard - greeting, KPI, charts, activity
@@ -32,4 +31,19 @@ Web application internal untuk tim founder Nalar Group. Command center harian un
 5. Keuangan - income/expense, approval flow
 6. Laporan - charts, export, filters
 7. Kalender - monthly view, events, attendees
-8. Pesan - channels, reactions, file sharing
+
+## Email Notifications (NEW - v2.0)
+1. **Laporan Mingguan** - dikirim ke CEO & COO setiap minggu, bisa diunduh (CSV)
+2. **Weekly Task Reminder** - reminder ke semua user untuk update progress tugas mingguan
+3. **H-1 Deadline Email** - notifikasi ke assignee untuk task dengan priority `urgent` yang deadline-nya besok
+
+### Email Service
+- Provider: **Resend** (gratis 100 email/hari)
+- Domain email: `nalar.co.id`
+- API routes: `/api/send-email`, `/api/weekly-task-reminder`, `/api/h1-deadline`
+
+## Tech Stack
+- Frontend: Vite 8 + React 19 + TypeScript 6 + Tailwind CSS 4
+- Backend: Supabase (Auth, Database, RLS)
+- Email: Resend
+- Deployment: Vercel (domain: `nalar-founders-workspace.vercel.app`)

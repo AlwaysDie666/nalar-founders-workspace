@@ -10,7 +10,6 @@ import InvoicePage from './pages/invoices/InvoicePage';
 import FinancePage from './pages/finance/FinancePage';
 import ReportsPage from './pages/reports/ReportsPage';
 import CalendarPage from './pages/calendar/CalendarPage';
-import ChatPage from './pages/chat/ChatPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isLoggedIn } = useApp();
@@ -31,7 +30,6 @@ function AppRoutes() {
       <Route path="/finance" element={<ProtectedRoute><FinancePage /></ProtectedRoute>} />
       <Route path="/reports" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
       <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
-      <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
     </Routes>
   );
 }

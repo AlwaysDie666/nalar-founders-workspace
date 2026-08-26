@@ -1,8 +1,9 @@
 ﻿import { useState, useEffect } from 'react';
+import { useApp } from '../../context/AppContext';
 import { supabase } from '../../lib/supabase';
 import { fetchTransactions } from '../../lib/api/transactions';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { TrendingUp, DollarSign, FolderKanban, CheckSquare, Download } from 'lucide-react';
+import { TrendingUp, DollarSign, FolderKanban, CheckSquare, Download, Mail } from 'lucide-react';
 
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
@@ -10,18 +11,91 @@ const fmt = (amount: number) =>
   new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
 
 export default function ReportsPage() {
+  const { currentUser } = useApp();
   const [transactions, setTransactions] = useState<{ type: string; amount: number; transaction_date: string }[]>([]);
-  const [projects, setProjects] = useState<{ status: string }[]>([]);
-  const [tasks, setTasks] = useState<{ status: string }[]>([]);
+  const [projects, setProjects] = useState<{ status: string; name: string }[]>([]);
+  const [tasks, setTasks] = useState<{ status: string; priority: string; title: string }[]>([]);
+  const [sending, setSending] = useState(false);
+  const [message, setMessage] = useState('');
+
+  const isPrivileged = currentUser?.role === 'ceo' || currentUser?.role === 'coo';
 
   useEffect(() => {
     fetchTransactions().then((d) => setTransactions(d || [])).catch(() => {});
-    supabase.from('projects').select('status').then(({ data }) => setProjects(data || []));
-    supabase.from('tasks').select('status').then(({ data }) => setTasks(data || []));
+    supabase.from('projects').select('status, name').then(({ data }) => setProjects(data || []));
+    supabase.from('tasks').select('status, priority, title').then(({ data }) => setTasks(data || []));
   }, []);
 
   const totalIncome = transactions.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0);
   const totalExpense = transactions.filter((t) => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+  const completedTasks = tasks.filter((t) => t.status === 'done').length;
+  const activeProjects = projects.filter((p) => p.status === 'active').length;
+
+  const now = new Date();
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - now.getDay() + 1);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+  const period = `${weekStart.toLocaleDateString('id-ID')} - ${weekEnd.toLocaleDateString('id-ID')}`;
+
+  const downloadReport = () => {
+    const csvContent = [
+      'Laporan Mingguan Nalar Workspace',
+      `Periode,${period}`,
+      '',
+      'Ringkasan Tugas',
+      `Total,${tasks.length}`,
+      `Selesai,${completedTasks}`,
+      '',
+      'Ringkasan Keuangan',
+      `Pendapatan,${totalIncome}`,
+      `Pengeluaran,${totalExpense}`,
+      `Labah Bersih,${totalIncome - totalExpense}`,
+      '',
+      'Proyek Aktif',
+      `Jumlah,${activeProjects}`,
+    ].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `laporan-mingguan-${now.toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const sendWeeklyReport = async () => {
+    if (!currentUser) return;
+    setSending(true);
+    setMessage('');
+    try {
+      const { data: cooUsers } = await supabase
+        .from('profiles')
+        .select('email')
+        .in('role', ['ceo', 'coo']);
+
+      if (cooUsers && cooUsers.length > 0) {
+        for (const user of cooUsers) {
+          await fetch('/api/send-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              to: user.email,
+              subject: `Laporan Mingguan Nalar Workspace - ${period}`,
+              html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;"><h1 style="color:#1e40af;">Laporan Mingguan</h1><p>Periode: ${period}</p><h2>Tugas</h2><p>Total: ${tasks.length} | Selesai: ${completedTasks}</p><h2>Keuangan</h2><p>Pendapatan: Rp ${totalIncome.toLocaleString('id-ID')}</p><p>Pengeluaran: Rp ${totalExpense.toLocaleString('id-ID')}</p><p>Labah Bersih: Rp ${(totalIncome - totalExpense).toLocaleString('id-ID')}</p><p>Proyek Aktif: ${activeProjects}</p></div>`,
+            }),
+          });
+        }
+        setMessage(`Laporan berhasil dikirim ke ${cooUsers.length} penerima.`);
+      } else {
+        setMessage('Tidak ditemukan user CEO/COO.');
+      }
+    } catch {
+      setMessage('Gagal mengirim email. Pastikan RESEND_API_KEY sudah benar.');
+    } finally {
+      setSending(false);
+    }
+  };
 
   const projectStatusData = [
     { name: 'Aktif', value: projects.filter((p) => p.status === 'active').length },
@@ -59,10 +133,25 @@ export default function ReportsPage() {
           <h1 className="text-2xl font-bold text-gray-800">Laporan & Analitik</h1>
           <p className="text-gray-500">Wawasan bisnis dan metrik performa</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl hover:bg-gray-50">
-          <Download size={18} /> Export Laporan
-        </button>
+        {isPrivileged && (
+          <div className="flex gap-3">
+            <button onClick={downloadReport}
+              className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl hover:bg-gray-50">
+              <Download size={18} /> Unduh CSV
+            </button>
+            <button onClick={sendWeeklyReport} disabled={sending}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:bg-blue-400">
+              <Mail size={18} /> {sending ? 'Mengirim...' : 'Kirim Laporan Mingguan'}
+            </button>
+          </div>
+        )}
       </div>
+
+      {message && (
+        <div className={`px-4 py-3 rounded-xl text-sm ${message.includes('berhasil') ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+          {message}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">

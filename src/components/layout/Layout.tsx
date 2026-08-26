@@ -8,7 +8,7 @@ import {
   DollarSign,
   BarChart3,
   Calendar,
-  MessageSquare,
+
   FileText,
   Menu,
   X,
@@ -28,7 +28,6 @@ const navItems = [
   { path: '/finance', label: 'Keuangan', icon: DollarSign },
   { path: '/reports', label: 'Laporan', icon: BarChart3 },
   { path: '/calendar', label: 'Kalender', icon: Calendar },
-  { path: '/chat', label: 'Pesan', icon: MessageSquare },
 ];
 
 const roleConfig: Record<UserRole, { color: string; bg: string; dot: string; label: string }> = {
