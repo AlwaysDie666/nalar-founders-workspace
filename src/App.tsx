@@ -2,7 +2,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider, useApp } from './context/AppContext';
 import Layout from './components/layout/Layout';
 import LoginPage from './pages/auth/LoginPage';
-import RegisterPage from './pages/auth/RegisterPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
 import TasksPage from './pages/tasks/TasksPage';
 import ProjectsPage from './pages/projects/ProjectsPage';
@@ -10,6 +9,7 @@ import InvoicePage from './pages/invoices/InvoicePage';
 import FinancePage from './pages/finance/FinancePage';
 import ReportsPage from './pages/reports/ReportsPage';
 import CalendarPage from './pages/calendar/CalendarPage';
+import AdminPage from './pages/admin/AdminPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isLoggedIn } = useApp();
@@ -22,7 +22,6 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={isLoggedIn ? <Navigate to="/" replace /> : <LoginPage />} />
-      <Route path="/register" element={isLoggedIn ? <Navigate to="/" replace /> : <RegisterPage />} />
       <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
       <Route path="/tasks" element={<ProtectedRoute><TasksPage /></ProtectedRoute>} />
       <Route path="/projects" element={<ProtectedRoute><ProjectsPage /></ProtectedRoute>} />
@@ -30,6 +29,7 @@ function AppRoutes() {
       <Route path="/finance" element={<ProtectedRoute><FinancePage /></ProtectedRoute>} />
       <Route path="/reports" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
       <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
+      <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
     </Routes>
   );
 }

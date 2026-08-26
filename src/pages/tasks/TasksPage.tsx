@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { supabase } from '../../lib/supabase';
-import { Plus, Search, Calendar, X } from 'lucide-react';
+import { Plus, Search, Calendar, X, CheckSquare } from 'lucide-react';
 
 const columns = [
   { id: 'todo', label: 'Belum Dikerjakan', color: 'bg-gray-50', dot: 'bg-gray-400' },
@@ -44,6 +44,7 @@ export default function TasksPage() {
   const [filterPriority, setFilterPriority] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'kanban' | 'priority'>('kanban');
 
   useEffect(() => {
     loadTasks();
@@ -129,11 +130,23 @@ export default function TasksPage() {
           <option value="medium">Sedang</option>
           <option value="low">Rendah</option>
         </select>
+        <div className="flex border border-gray-200 rounded-lg overflow-hidden">
+          <button onClick={() => setViewMode('kanban')}
+            className={`px-3 py-2 text-sm ${viewMode === 'kanban' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>Kanban</button>
+          <button onClick={() => setViewMode('priority')}
+            className={`px-3 py-2 text-sm ${viewMode === 'priority' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>Prioritas</button>
+        </div>
       </div>
 
       {loading ? (
         <div className="flex-1 flex items-center justify-center text-gray-400">Memuat data...</div>
-      ) : (
+      ) : filteredTasks.length === 0 ? (
+        <div className="flex-1 flex flex-col items-center justify-center text-gray-400 py-16">
+          <CheckSquare size={48} className="mb-4 text-gray-300" />
+          <p className="text-lg font-medium mb-1">Belum ada tugas</p>
+          <p className="text-sm">Klik "Tambah Tugas" untuk membuat tugas pertama</p>
+        </div>
+      ) : viewMode === 'kanban' ? (
         <div className="flex-1 overflow-x-auto">
           <div className="flex gap-6 min-w-max">
             {columns.map((column) => {
@@ -208,6 +221,61 @@ export default function TasksPage() {
                 </div>
               );
             })}
+          </div>
+        </div>
+      ) : (
+        <div className="flex-1 overflow-auto">
+          <div className="space-y-3">
+            {filteredTasks
+              .sort((a, b) => {
+                const order = { urgent: 0, high: 1, medium: 2, low: 3 };
+                return (order[a.priority as keyof typeof order] ?? 4) - (order[b.priority as keyof typeof order] ?? 4);
+              })
+              .map((task) => (
+                <div key={task.id} className="bg-white rounded-lg p-4 shadow-sm border border-gray-100 flex items-center gap-4">
+                  <div className={`w-3 h-3 rounded-full flex-shrink-0 ${priorityColors[task.priority]}`}></div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-medium text-gray-800">{task.title}</h4>
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${task.status === 'done' ? 'bg-green-100 text-green-700' : task.status === 'in_progress' ? 'bg-blue-100 text-blue-700' : task.status === 'review' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600'}`}>
+                        {task.status === 'todo' ? 'Belum' : task.status === 'in_progress' ? 'Dikerjakan' : task.status === 'review' ? 'Review' : 'Selesai'}
+                      </span>
+                    </div>
+                    {task.description && <p className="text-sm text-gray-500 truncate mt-1">{task.description}</p>}
+                  </div>
+                  <div className="flex items-center gap-4 text-sm text-gray-500 flex-shrink-0">
+                    {task.due_date && (
+                      <div className="flex items-center gap-1">
+                        <Calendar size={14} />
+                        <span>{new Date(task.due_date).toLocaleDateString('id-ID')}</span>
+                      </div>
+                    )}
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${priorityColors[task.priority]} text-white`}>
+                      {task.priority === 'urgent' ? 'Urgent' : task.priority === 'high' ? 'Tinggi' : task.priority === 'medium' ? 'Sedang' : 'Rendah'}
+                    </span>
+                    {task.assignee && (
+                      <div className="flex items-center gap-1">
+                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs">
+                          {task.assignee.full_name.charAt(0)}
+                        </div>
+                        <span className="text-xs">{task.assignee.full_name}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-1 flex-shrink-0">
+                    {task.status !== 'done' && (
+                      <button onClick={() => {
+                        const order = ['todo', 'in_progress', 'review', 'done'];
+                        const idx = order.indexOf(task.status);
+                        if (idx < order.length - 1) handleStatusChange(task.id, order[idx + 1]);
+                      }} className="px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded">Maju</button>
+                    )}
+                    <button onClick={() => handleDeleteTask(task.id)} className="p-1 hover:bg-red-50 rounded text-gray-400 hover:text-red-500">
+                      <X size={14} />
+                    </button>
+                  </div>
+                </div>
+              ))}
           </div>
         </div>
       )}

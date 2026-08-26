@@ -126,6 +126,93 @@ export default function ReportsPage() {
     return MONTHS.map((m) => ({ month: m, income: map[m].income, expense: map[m].expense }));
   })();
 
+  const downloadFile = (content: string, filename: string, type: string) => {
+    const blob = new Blob([content], { type });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const generateReportHtml = () => {
+    return `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Laporan Nalar Workspace</title></head>
+<body style="font-family:Arial,sans-serif;max-width:800px;margin:0 auto;padding:40px;">
+  <h1 style="color:#1e40af;">Laporan Mingguan Nalar Workspace</h1>
+  <p style="color:#6b7280;">Periode: ${period}</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:30px 0;">
+    <div style="background:#f0fdf4;padding:20px;border-radius:12px;">
+      <h3 style="margin:0 0 5px;color:#16a34a;">Total Pendapatan</h3>
+      <p style="margin:0;font-size:24px;font-weight:700;">Rp ${totalIncome.toLocaleString('id-ID')}</p>
+    </div>
+    <div style="background:#fef2f2;padding:20px;border-radius:12px;">
+      <h3 style="margin:0 0 5px;color:#dc2626;">Total Pengeluaran</h3>
+      <p style="margin:0;font-size:24px;font-weight:700;">Rp ${totalExpense.toLocaleString('id-ID')}</p>
+    </div>
+  </div>
+  <div style="background:#eff6ff;padding:20px;border-radius:12px;margin:20px 0;">
+    <h3 style="margin:0 0 5px;color:#2563eb;">Laba Bersih</h3>
+    <p style="margin:0;font-size:24px;font-weight:700;">Rp ${(totalIncome - totalExpense).toLocaleString('id-ID')}</p>
+  </div>
+  <h2 style="margin-top:30px;">Ringkasan Tugas</h2>
+  <table style="width:100%;border-collapse:collapse;margin:10px 0;">
+    <tr style="background:#f3f4f6;"><td style="padding:10px;">Total Tugas</td><td style="padding:10px;text-align:right;font-weight:700;">${tasks.length}</td></tr>
+    <tr><td style="padding:10px;">Selesai</td><td style="padding:10px;text-align:right;color:#16a34a;font-weight:700;">${completedTasks}</td></tr>
+    <tr style="background:#f3f4f6;"><td style="padding:10px;">Sedang Dikerjakan</td><td style="padding:10px;text-align:right;color:#2563eb;font-weight:700;">${tasks.filter(t => t.status === 'in_progress').length}</td></tr>
+    <tr><td style="padding:10px;">Proyek Aktif</td><td style="padding:10px;text-align:right;font-weight:700;">${activeProjects}</td></tr>
+  </table>
+  <h2 style="margin-top:30px;">Data Bulanan</h2>
+  <table style="width:100%;border-collapse:collapse;margin:10px 0;">
+    <thead><tr style="background:#f3f4f6;"><th style="padding:10px;text-align:left;">Bulan</th><th style="padding:10px;text-align:right;">Pendapatan</th><th style="padding:10px;text-align:right;">Pengeluaran</th></tr></thead>
+    <tbody>${monthlyData.map(m => `<tr><td style="padding:8px 10px;">${m.month}</td><td style="padding:8px 10px;text-align:right;">Rp ${m.income.toLocaleString('id-ID')}</td><td style="padding:8px 10px;text-align:right;">Rp ${m.expense.toLocaleString('id-ID')}</td></tr>`).join('')}</tbody>
+  </table>
+  <p style="margin-top:40px;text-align:center;color:#9ca3af;font-size:12px;">Dibuat oleh Nalar Workspace</p>
+</body></html>`;
+  };
+
+  const generateReportMd = () => {
+    const monthlyRows = monthlyData.map(m => `| ${m.month} | Rp ${m.income.toLocaleString('id-ID')} | Rp ${m.expense.toLocaleString('id-ID')} |`).join('\n');
+    return `# Laporan Mingguan Nalar Workspace
+
+**Periode:** ${period}
+
+## Ringkasan Keuangan
+
+| | |
+|---|---|
+| Total Pendapatan | Rp ${totalIncome.toLocaleString('id-ID')} |
+| Total Pengeluaran | Rp ${totalExpense.toLocaleString('id-ID')} |
+| **Laba Bersih** | **Rp ${(totalIncome - totalExpense).toLocaleString('id-ID')}** |
+
+## Ringkasan Tugas
+
+| Metrik | Jumlah |
+|--------|--------|
+| Total Tugas | ${tasks.length} |
+| Selesai | ${completedTasks} |
+| Sedang Dikerjakan | ${tasks.filter(t => t.status === 'in_progress').length} |
+| Proyek Aktif | ${activeProjects} |
+
+## Data Bulanan
+
+| Bulan | Pendapatan | Pengeluaran |
+|-------|-----------|-------------|
+${monthlyRows}
+
+---
+*Dibuat oleh Nalar Workspace*`;
+  };
+
+  const exportReportHtml = () => {
+    downloadFile(generateReportHtml(), `laporan-mingguan-${now.toISOString().split('T')[0]}.html`, 'text/html');
+  };
+
+  const exportReportMd = () => {
+    downloadFile(generateReportMd(), `laporan-mingguan-${now.toISOString().split('T')[0]}.md`, 'text/markdown');
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -142,6 +229,14 @@ export default function ReportsPage() {
             <button onClick={sendWeeklyReport} disabled={sending}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:bg-blue-400">
               <Mail size={18} /> {sending ? 'Mengirim...' : 'Kirim Laporan Mingguan'}
+            </button>
+            <button onClick={exportReportHtml}
+              className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl hover:bg-gray-50">
+              <Download size={18} /> HTML
+            </button>
+            <button onClick={exportReportMd}
+              className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl hover:bg-gray-50">
+              <Download size={18} /> Markdown
             </button>
           </div>
         )}

@@ -78,27 +78,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return {};
   }
 
-  async function signup(email: string, password: string, name: string) {
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error) {
-      return { error: error.message };
-    }
-    if (data.user) {
-      const { error: profileError } = await supabase.from('profiles').insert({
-        id: data.user.id,
-        email: email,
-        full_name: name,
-        role: 'kreatif',
-        is_active: true,
-      });
-      if (profileError) {
-        console.error('Profile insert error:', profileError);
-      }
-      if (data.session === null) {
-        return { needsConfirmation: true };
-      }
-    }
-    return {};
+  async function signup(_email: string, _password: string, _name: string) {
+    return { error: 'Self-register tidak tersedia. Hubungi COO untuk membuat akun.' };
   }
 
   async function logout() {

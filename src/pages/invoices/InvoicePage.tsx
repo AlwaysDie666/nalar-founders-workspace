@@ -95,6 +95,111 @@ export default function InvoicePage() {
   const tax = subtotal * 0.11;
   const total = subtotal + tax;
 
+  const generateInvoiceHtml = (inv: InvoiceRow) => {
+    const itemRows = (inv.items || []).map(item => `
+      <tr>
+        <td style="padding:10px 15px;border-bottom:1px solid #e5e7eb;">${item.description}</td>
+        <td style="padding:10px 15px;border-bottom:1px solid #e5e7eb;text-align:center;">${item.quantity}</td>
+        <td style="padding:10px 15px;border-bottom:1px solid #e5e7eb;text-align:right;">Rp ${item.unit_price.toLocaleString('id-ID')}</td>
+        <td style="padding:10px 15px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:600;">Rp ${item.total.toLocaleString('id-ID')}</td>
+      </tr>
+    `).join('');
+
+    return `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Invoice ${inv.invoice_number}</title></head>
+<body style="font-family:Arial,sans-serif;max-width:800px;margin:0 auto;padding:40px;">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:40px;">
+    <div>
+      <h1 style="margin:0;color:#1e40af;font-size:28px;">INVOICE</h1>
+      <p style="margin:5px 0 0;color:#6b7280;">${inv.invoice_number}</p>
+    </div>
+    <div style="text-align:right;">
+      <p style="margin:0;font-size:14px;color:#6b7280;">Status: <strong style="color:${inv.status === 'paid' ? '#16a34a' : inv.status === 'overdue' ? '#dc2626' : '#2563eb'}">${inv.status.toUpperCase()}</strong></p>
+      <p style="margin:5px 0 0;font-size:14px;color:#6b7280;">Tanggal: ${new Date(inv.issue_date).toLocaleDateString('id-ID')}</p>
+      <p style="margin:5px 0 0;font-size:14px;color:#6b7280;">Jatuh Tempo: ${new Date(inv.due_date).toLocaleDateString('id-ID')}</p>
+    </div>
+  </div>
+  <div style="margin-bottom:30px;">
+    <h3 style="margin:0 0 5px;color:#374151;font-size:14px;">KEPADA:</h3>
+    <p style="margin:0;font-weight:600;">${inv.client_name}</p>
+    <p style="margin:2px 0 0;color:#6b7280;font-size:14px;">${inv.client_email || ''}</p>
+    <p style="margin:2px 0 0;color:#6b7280;font-size:14px;">${inv.client_address || ''}</p>
+  </div>
+  <table style="width:100%;border-collapse:collapse;margin-bottom:30px;">
+    <thead><tr style="background:#f3f4f6;">
+      <th style="padding:10px 15px;text-align:left;font-size:13px;color:#6b7280;">Deskripsi</th>
+      <th style="padding:10px 15px;text-align:center;font-size:13px;color:#6b7280;">Qty</th>
+      <th style="padding:10px 15px;text-align:right;font-size:13px;color:#6b7280;">Harga</th>
+      <th style="padding:10px 15px;text-align:right;font-size:13px;color:#6b7280;">Total</th>
+    </tr></thead>
+    <tbody>${itemRows}</tbody>
+  </table>
+  <div style="display:flex;justify-content:flex-end;">
+    <div style="width:280px;">
+      <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:14px;"><span style="color:#6b7280;">Subtotal</span><span>Rp ${inv.subtotal.toLocaleString('id-ID')}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:14px;"><span style="color:#6b7280;">Pajak (11%)</span><span>Rp ${inv.tax.toLocaleString('id-ID')}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:12px 0 0;font-size:18px;font-weight:700;border-top:2px solid #e5e7eb;"><span>Total</span><span>Rp ${inv.total.toLocaleString('id-ID')}</span></div>
+    </div>
+  </div>
+  ${inv.notes ? `<div style="margin-top:30px;padding:15px;background:#f9fafb;border-radius:8px;"><p style="margin:0;font-size:14px;color:#6b7280;"><strong>Catatan:</strong> ${inv.notes}</p></div>` : ''}
+  <p style="margin-top:40px;text-align:center;color:#9ca3af;font-size:12px;">Dibuat oleh Nalar Workspace</p>
+</body></html>`;
+  };
+
+  const generateInvoiceMd = (inv: InvoiceRow) => {
+    const itemRows = (inv.items || []).map(item =>
+      `| ${item.description} | ${item.quantity} | Rp ${item.unit_price.toLocaleString('id-ID')} | Rp ${item.total.toLocaleString('id-ID')} |`
+    ).join('\n');
+
+    return `# Invoice ${inv.invoice_number}
+
+**Status:** ${inv.status.toUpperCase()}
+**Tanggal:** ${new Date(inv.issue_date).toLocaleDateString('id-ID')}
+**Jatuh Tempo:** ${new Date(inv.due_date).toLocaleDateString('id-ID')}
+
+## Kepada
+**${inv.client_name}**
+${inv.client_email || ''}
+${inv.client_address || ''}
+
+## Rincian
+
+| Deskripsi | Qty | Harga | Total |
+|-----------|-----|-------|-------|
+${itemRows}
+
+## Ringkasan
+
+| | |
+|---|---|
+| Subtotal | Rp ${inv.subtotal.toLocaleString('id-ID')} |
+| Pajak (11%) | Rp ${inv.tax.toLocaleString('id-ID')} |
+| **Total** | **Rp ${inv.total.toLocaleString('id-ID')}** |
+
+${inv.notes ? `**Catatan:** ${inv.notes}` : ''}
+
+---
+*Dibuat oleh Nalar Workspace*`;
+  };
+
+  const downloadFile = (content: string, filename: string, type: string) => {
+    const blob = new Blob([content], { type });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportHtml = (inv: InvoiceRow) => {
+    downloadFile(generateInvoiceHtml(inv), `invoice-${inv.invoice_number}.html`, 'text/html');
+  };
+
+  const exportMd = (inv: InvoiceRow) => {
+    downloadFile(generateInvoiceMd(inv), `invoice-${inv.invoice_number}.md`, 'text/markdown');
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) return;
@@ -265,6 +370,14 @@ export default function InvoicePage() {
                 </button>
               </div>
             )}
+            <div className="flex gap-3 mt-3">
+              <button onClick={() => exportHtml(sel)} className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 text-sm">
+                <Download size={16} /> Export HTML
+              </button>
+              <button onClick={() => exportMd(sel)} className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 text-sm">
+                <Download size={16} /> Export Markdown
+              </button>
+            </div>
           </div>
         </div>
       )}

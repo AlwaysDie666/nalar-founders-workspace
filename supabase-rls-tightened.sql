@@ -48,18 +48,6 @@ CREATE POLICY "projects_coo_all" ON projects
   FOR ALL USING (public.is_coo());
 
 -- =============================================
--- PROJECT MEMBERS
--- =============================================
-DROP POLICY IF EXISTS "all read pm" ON project_members;
-DROP POLICY IF EXISTS "coo manage pm" ON project_members;
-
-CREATE POLICY "pm_select" ON project_members
-  FOR SELECT USING (true);
-
-CREATE POLICY "pm_coo_all" ON project_members
-  FOR ALL USING (public.is_coo());
-
--- =============================================
 -- TASKS
 -- =============================================
 DROP POLICY IF EXISTS "all read task" ON tasks;
