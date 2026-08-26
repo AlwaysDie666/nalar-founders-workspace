@@ -57,14 +57,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
       .single();
 
     if (data) {
-      setProfile(data);
+      // Auto-admin: emails in this list always get COO role
+      const ADMIN_EMAILS = ['nalargroup.id@gmail.com'];
+      const autoRole = ADMIN_EMAILS.includes(data.email) ? 'coo' : data.role;
+
+      if (autoRole !== data.role) {
+        await supabase.from('profiles').update({ role: autoRole }).eq('id', userId);
+      }
+
+      setProfile({ ...data, role: autoRole });
       setCurrentUser({
         id: data.id,
-        name: data.full_name,
+        name: data.name,
         email: data.email,
-        role: data.role as UserRole,
+        role: autoRole as UserRole,
         avatar: data.avatar_url,
-        isActive: data.is_active,
         needsPasswordChange: data.needs_password_change,
       });
     }

@@ -27,12 +27,12 @@ interface TaskRow {
   due_date: string | null;
   tags: string[] | null;
   created_at: string;
-  assignee?: { full_name: string; role: string } | null;
+  assignee?: { name: string; role: string } | null;
 }
 
 interface ProfileRow {
   id: string;
-  full_name: string;
+  name: string;
   role: string;
 }
 
@@ -54,14 +54,14 @@ export default function TasksPage() {
   async function loadTasks() {
     const { data } = await supabase
       .from('tasks')
-      .select('*, assignee:profiles!tasks_assignee_id_fkey(full_name, role)')
+      .select('*, assignee:profiles!tasks_assignee_id_fkey(name, role)')
       .order('created_at', { ascending: false });
     setTasks(data || []);
     setLoading(false);
   }
 
   async function loadUsers() {
-    const { data } = await supabase.from('profiles').select('id, full_name, role');
+    const { data } = await supabase.from('profiles').select('id, name, role');
     setUsers(data || []);
   }
 
@@ -89,7 +89,7 @@ export default function TasksPage() {
       due_date: form.get('dueDate') as string || null,
       created_by: currentUser?.id || null,
       status: 'todo',
-    }).select('*, assignee:profiles!tasks_assignee_id_fkey(full_name, role)').single();
+    }).select('*, assignee:profiles!tasks_assignee_id_fkey(name, role)').single();
     if (!error && data) {
       setTasks([data, ...tasks]);
       setShowAddModal(false);
@@ -186,9 +186,9 @@ export default function TasksPage() {
                           {task.assignee && (
                             <div className="flex items-center gap-2">
                               <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs">
-                                {task.assignee.full_name.charAt(0)}
+                                {task.assignee.name.charAt(0)}
                               </div>
-                              <span className="text-xs text-gray-500">{task.assignee.full_name}</span>
+                              <span className="text-xs text-gray-500">{task.assignee.name}</span>
                             </div>
                           )}
                         </div>
@@ -256,9 +256,9 @@ export default function TasksPage() {
                     {task.assignee && (
                       <div className="flex items-center gap-1">
                         <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs">
-                          {task.assignee.full_name.charAt(0)}
+                          {task.assignee.name.charAt(0)}
                         </div>
-                        <span className="text-xs">{task.assignee.full_name}</span>
+                        <span className="text-xs">{task.assignee.name}</span>
                       </div>
                     )}
                   </div>
@@ -308,7 +308,7 @@ export default function TasksPage() {
                   <select name="assignee" className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="">Belum ditugaskan</option>
                     {users.map((u) => (
-                      <option key={u.id} value={u.id}>{u.full_name}</option>
+                      <option key={u.id} value={u.id}>{u.name}</option>
                     ))}
                   </select>
                 </div>

@@ -7,7 +7,7 @@ type TaskUpdate = Database['public']['Tables']['tasks']['Update'];
 export async function fetchTasks() {
   const { data, error } = await supabase
     .from('tasks')
-    .select('*, assignee:profiles!tasks_assignee_id_fkey(full_name, email, role)')
+    .select('*, assignee:profiles!tasks_assignee_id_fkey(name, email, role)')
     .order('created_at', { ascending: false });
   if (error) throw error;
   return data;

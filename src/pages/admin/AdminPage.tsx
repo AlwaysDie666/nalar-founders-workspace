@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { supabase } from '../../lib/supabase';
-import { supabaseAdmin } from '../../lib/supabase-admin';
+import { getSupabaseAdmin } from '../../lib/supabase-admin';
 import { Plus, Trash2, X } from 'lucide-react';
 
 const roleOptions = [
@@ -27,9 +27,9 @@ const roleColors: Record<string, string> = {
 interface ProfileRow {
   id: string;
   email: string;
-  full_name: string;
+  name: string;
   role: string;
-  is_active: boolean;
+  needs_password_change: boolean;
   created_at: string;
 }
 
@@ -37,7 +37,7 @@ export default function AdminPage() {
   const { currentUser } = useApp();
   const [users, setUsers] = useState<ProfileRow[]>([]);
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ email: '', full_name: '', role: 'kreatif' });
+  const [form, setForm] = useState({ email: '', name: '', role: 'kreatif' });
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -62,7 +62,7 @@ export default function AdminPage() {
 
     // Create auth user with a temporary password
     const tempPassword = 'Nalar@' + Math.random().toString(36).slice(-6);
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+    const { data: authData, error: authError } = await getSupabaseAdmin().auth.admin.createUser({
       email: form.email,
       password: tempPassword,
       email_confirm: true,
@@ -77,9 +77,8 @@ export default function AdminPage() {
     const { error: profileError } = await supabase.from('profiles').insert({
       id: authData.user.id,
       email: form.email,
-      full_name: form.full_name,
+      name: form.name,
       role: form.role,
-      is_active: true,
       needs_password_change: true,
     });
 
@@ -89,7 +88,7 @@ export default function AdminPage() {
     }
 
     setMessage(`Akun berhasil dibuat! Password sementara: ${tempPassword}`);
-    setForm({ email: '', full_name: '', role: 'kreatif' });
+    setForm({ email: '', name: '', role: 'kreatif' });
     setShowAdd(false);
     loadUsers();
   }
@@ -97,12 +96,7 @@ export default function AdminPage() {
   async function handleDeleteUser(id: string) {
     if (!confirm('Yakin ingin menghapus user ini?')) return;
     await supabase.from('profiles').delete().eq('id', id);
-    await supabaseAdmin.auth.admin.deleteUser(id);
-    loadUsers();
-  }
-
-  async function handleToggleActive(id: string, current: boolean) {
-    await supabase.from('profiles').update({ is_active: !current }).eq('id', id);
+    await getSupabaseAdmin().auth.admin.deleteUser(id);
     loadUsers();
   }
 
@@ -149,8 +143,8 @@ export default function AdminPage() {
             <form onSubmit={handleAddUser} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
-                <input type="text" required value={form.full_name}
-                  onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+                <input type="text" required value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div>
@@ -187,7 +181,6 @@ export default function AdminPage() {
               <tr className="border-b border-gray-100">
                 <th className="text-left px-6 py-3 text-sm font-medium text-gray-500">User</th>
                 <th className="text-left px-6 py-3 text-sm font-medium text-gray-500">Role</th>
-                <th className="text-left px-6 py-3 text-sm font-medium text-gray-500">Status</th>
                 <th className="text-right px-6 py-3 text-sm font-medium text-gray-500">Aksi</th>
               </tr>
             </thead>
@@ -197,10 +190,10 @@ export default function AdminPage() {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold text-sm">
-                        {user.full_name?.charAt(0) || '?'}
+                        {user.name?.charAt(0) || '?'}
                       </div>
                       <div>
-                        <p className="font-medium text-gray-800">{user.full_name}</p>
+                        <p className="font-medium text-gray-800">{user.name}</p>
                         <p className="text-sm text-gray-500">{user.email}</p>
                       </div>
                     </div>
@@ -211,12 +204,6 @@ export default function AdminPage() {
                       className={`px-2 py-1 rounded-full text-xs font-medium border-0 ${roleColors[user.role] || 'bg-gray-100 text-gray-700'}`}>
                       {roleOptions.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
                     </select>
-                  </td>
-                  <td className="px-6 py-4">
-                    <button onClick={() => handleToggleActive(user.id, user.is_active)}
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${user.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                      {user.is_active ? 'Aktif' : 'Nonaktif'}
-                    </button>
                   </td>
                   <td className="px-6 py-4 text-right">
                     {user.id !== currentUser?.id && (

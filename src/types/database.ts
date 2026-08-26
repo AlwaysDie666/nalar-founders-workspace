@@ -7,30 +7,30 @@ export interface Database {
         Row: {
           id: string;
           email: string;
-          full_name: string;
+          name: string;
           role: string;
           avatar_url: string | null;
-          is_active: boolean;
+          needs_password_change: boolean;
           created_at: string;
           updated_at: string;
         };
         Insert: {
           id: string;
           email: string;
-          full_name: string;
+          name: string;
           role?: string;
           avatar_url?: string | null;
-          is_active?: boolean;
+          needs_password_change?: boolean;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           id?: string;
           email?: string;
-          full_name?: string;
+          name?: string;
           role?: string;
           avatar_url?: string | null;
-          is_active?: boolean;
+          needs_password_change?: boolean;
           created_at?: string;
           updated_at?: string;
         };

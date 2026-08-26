@@ -55,7 +55,7 @@ export default function SetPasswordPage() {
 
         <h2 className="text-2xl font-bold text-gray-900">Buat Password Baru</h2>
         <p className="text-gray-500 mt-1 mb-8">
-          Selamat datang, {profile?.full_name || currentUser?.name}. Silakan buat password baru untuk akun Anda.
+          Selamat datang, {profile?.name || currentUser?.name}. Silakan buat password baru untuk akun Anda.
         </p>
 
         <form onSubmit={handleSetPassword} className="space-y-5">

@@ -13,10 +13,9 @@ export interface User {
 export interface Profile {
   id: string;
   email: string;
-  full_name: string;
+  name: string;
   role: UserRole;
   avatar_url?: string;
-  is_active: boolean;
   needs_password_change?: boolean;
   created_at: string;
   updated_at: string;

@@ -1,12 +1,18 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseServiceKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+// Lazy initialization — only throws when actually called, not at import time
+let _admin: ReturnType<typeof createClient> | null = null;
 
-if (!supabaseUrl || !supabaseServiceKey) {
-  throw new Error('Missing Supabase service role key for admin operations');
+export function getSupabaseAdmin() {
+  if (_admin) return _admin;
+
+  const url = import.meta.env.VITE_SUPABASE_URL;
+  const key = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url || !key) {
+    throw new Error('VITE_SUPABASE_SERVICE_ROLE_KEY belum di-set di .env.local');
+  }
+
+  _admin = createClient(url, key);
+  return _admin;
 }
-
-// Admin client with service_role key - used only for admin operations (user creation/deletion)
-// WARNING: This key bypasses RLS. Only use in AdminPage for COO-only operations.
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
