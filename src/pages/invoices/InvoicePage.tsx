@@ -323,25 +323,25 @@ ${inv.notes ? `**Catatan:** ${inv.notes}` : ''}
               <button onClick={() => setSel(null)} className="p-2 hover:bg-gray-100 rounded-lg"><X size={20} /></button>
             </div>
             <div className="grid grid-cols-2 gap-6 mb-6">
-              <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-1">Client</h3>
-                <p className="font-medium">{sel.client_name}</p>
-                <p className="text-sm text-gray-500">{sel.client_email}</p>
-                <p className="text-sm text-gray-500">{sel.client_address}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm text-gray-500">Status</p>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${sc[sel.status] || 'bg-gray-100 text-gray-700'}`}>{sel.status}</span>
-                <p className="text-sm text-gray-500 mt-2">Issue: {new Date(sel.issue_date).toLocaleDateString('id-ID')}</p>
-                <p className="text-sm text-gray-500">Due: {new Date(sel.due_date).toLocaleDateString('id-ID')}</p>
-              </div>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500 mb-1">Klien</h3>
+                  <p className="font-medium">{sel.client_name}</p>
+                  <p className="text-sm text-gray-500">{sel.client_email}</p>
+                  <p className="text-sm text-gray-500">{sel.client_address}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Status</p>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${sc[sel.status] || 'bg-gray-100 text-gray-700'}`}>{sel.status}</span>
+                  <p className="text-sm text-gray-500 mt-2">Tanggal: {new Date(sel.issue_date).toLocaleDateString('id-ID')}</p>
+                  <p className="text-sm text-gray-500">Jatuh Tempo: {new Date(sel.due_date).toLocaleDateString('id-ID')}</p>
+                </div>
             </div>
             <table className="w-full mb-6">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Description</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Produk/Layanan</th>
                   <th className="px-4 py-2 text-center text-xs font-medium text-gray-500">Qty</th>
-                  <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">Price</th>
+                  <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">Harga Satuan</th>
                   <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">Total</th>
                 </tr>
               </thead>
@@ -392,29 +392,35 @@ ${inv.notes ? `**Catatan:** ${inv.notes}` : ''}
             <form onSubmit={handleCreate} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nama Client</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nama Klien</label>
                   <input required value={form.clientName} onChange={(e) => setForm({ ...form, clientName: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email Client</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email Klien</label>
                   <input type="email" value={form.clientEmail} onChange={(e) => setForm({ ...form, clientEmail: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg" />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Alamat Client</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Alamat Klien</label>
                 <input value={form.clientAddress} onChange={(e) => setForm({ ...form, clientAddress: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg" />
               </div>
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-sm font-medium text-gray-700">Line Items</label>
-                  <button type="button" onClick={addItem} className="text-sm text-blue-600 hover:text-blue-700">+ Add Item</button>
+                  <button type="button" onClick={addItem} className="text-sm text-blue-600 hover:text-blue-700">+ Tambah Item</button>
                 </div>
                 <div className="space-y-2">
                   {items.map((item, idx) => (
                     <div key={idx} className="flex gap-2 items-center">
-                      <input placeholder="Description" value={item.description} onChange={(e) => updateItem(idx, 'description', e.target.value)} className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-                      <input type="number" placeholder="Qty" value={item.quantity} onChange={(e) => updateItem(idx, 'quantity', Number(e.target.value))} className="w-20 px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-                      <input type="number" placeholder="Price" value={item.unit_price} onChange={(e) => updateItem(idx, 'unit_price', Number(e.target.value))} className="w-32 px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+                      <input placeholder="Nama produk/layanan" value={item.description} onChange={(e) => updateItem(idx, 'description', e.target.value)} className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-gray-400 leading-none mb-1">Qty</span>
+                        <input type="number" min="1" value={item.quantity} onChange={(e) => updateItem(idx, 'quantity', Number(e.target.value))} className="w-20 px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-gray-400 leading-none mb-1">Harga Satuan (Rp)</span>
+                        <input type="number" min="0" value={item.unit_price} onChange={(e) => updateItem(idx, 'unit_price', Number(e.target.value))} className="w-36 px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+                      </div>
                       <span className="w-32 text-right text-sm font-medium">{fmt(item.total)}</span>
                       {items.length > 1 && <button type="button" onClick={() => removeItem(idx)} className="p-1 hover:bg-red-50 rounded"><Trash2 size={14} className="text-red-500" /></button>}
                     </div>

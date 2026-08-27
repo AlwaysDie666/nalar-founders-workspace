@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { fetchTransactions, createTransaction } from '../../lib/api/transactions';
-import { Plus, Search, TrendingUp, TrendingDown, DollarSign, ArrowUpRight, ArrowDownRight, Download, X } from 'lucide-react';
+import { Plus, Search, TrendingUp, TrendingDown, DollarSign, ArrowUpRight, ArrowDownRight, Download, X, Eye } from 'lucide-react';
 
 interface Tx {
   id: string;
@@ -22,7 +22,12 @@ export default function FinancePage() {
   const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
-  const [form, setForm] = useState({ type: 'income', description: '', amount: '', category: '', date: '' });
+  const [detailTx, setDetailTx] = useState<Tx | null>(null);
+  const [form, setForm] = useState({ type: 'income', description: '', amount: '', date: '' });
+
+  // Export date range
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportRange, setExportRange] = useState({ start: '', end: '' });
 
   const loadData = async () => {
     try {
@@ -52,18 +57,119 @@ export default function FinancePage() {
       await createTransaction({
         type: form.type,
         amount: Number(form.amount),
-        category: form.category,
+        category: '',
         description: form.description,
         transaction_date: form.date,
-        status: 'pending',
+        status: 'completed',
         created_by: currentUser.id,
       });
       setShowAddModal(false);
-      setForm({ type: 'income', description: '', amount: '', category: '', date: '' });
+      setForm({ type: 'income', description: '', amount: '', date: '' });
       loadData();
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const downloadFile = (content: string, filename: string, type: string) => {
+    const blob = new Blob([content], { type });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportCsv = () => {
+    const start = exportRange.start ? new Date(exportRange.start) : null;
+    const end = exportRange.end ? new Date(exportRange.end) : null;
+    const data = transactions.filter((t) => {
+      const d = new Date(t.transaction_date);
+      if (start && d < start) return false;
+      if (end && d > end) return false;
+      return true;
+    });
+
+    const rows = [
+      'Laporan Keuangan Nalar Workspace',
+      exportRange.start && exportRange.end
+        ? `Periode,${exportRange.start} - ${exportRange.end}`
+        : 'Periode,Semua',
+      '',
+      'Tanggal,Tipe,Deskripsi,Jumlah (IDR)',
+      ...data.map((t) =>
+        `${new Date(t.transaction_date).toLocaleDateString('id-ID')},${t.type === 'income' ? 'Pendapatan' : 'Pengeluaran'},"${t.description}",${t.type === 'income' ? '' : '-'}${t.amount}`
+      ),
+      '',
+      `Total Pendapatan,${totalIncome}`,
+      `Total Pengeluaran,${totalExpense}`,
+      `Laba Bersih,${netProfit}`,
+    ].join('\n');
+
+    const dateStr = new Date().toISOString().split('T')[0];
+    downloadFile(rows, `laporan-keuangan-${dateStr}.csv`, 'text/csv');
+    setShowExportModal(false);
+  };
+
+  const exportHtml = () => {
+    const start = exportRange.start ? new Date(exportRange.start) : null;
+    const end = exportRange.end ? new Date(exportRange.end) : null;
+    const data = transactions.filter((t) => {
+      const d = new Date(t.transaction_date);
+      if (start && d < start) return false;
+      if (end && d > end) return false;
+      return true;
+    });
+
+    const periode = exportRange.start && exportRange.end
+      ? `${exportRange.start} - ${exportRange.end}`
+      : 'Semua Data';
+
+    const rows = data.map((t) => `
+      <tr>
+        <td style="padding:10px;border-bottom:1px solid #e5e7eb;">${new Date(t.transaction_date).toLocaleDateString('id-ID')}</td>
+        <td style="padding:10px;border-bottom:1px solid #e5e7eb;">${t.type === 'income' ? 'Pendapatan' : 'Pengeluaran'}</td>
+        <td style="padding:10px;border-bottom:1px solid #e5e7eb;">${t.description}</td>
+        <td style="padding:10px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:600;color:${t.type === 'income' ? '#16a34a' : '#dc2626'};">
+          ${t.type === 'income' ? '+' : '-'}${fmt(t.amount)}
+        </td>
+      </tr>`).join('');
+
+    const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Laporan Keuangan</title></head>
+<body style="font-family:Arial,sans-serif;max-width:800px;margin:0 auto;padding:40px;">
+  <h1 style="color:#1e40af;">Laporan Keuangan</h1>
+  <p style="color:#6b7280;">Periode: ${periode}</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin:24px 0;">
+    <div style="background:#f0fdf4;padding:16px;border-radius:8px;text-align:center;">
+      <p style="margin:0;color:#16a34a;font-size:13px;">Pendapatan</p>
+      <p style="margin:4px 0 0;font-size:20px;font-weight:700;">${fmt(totalIncome)}</p>
+    </div>
+    <div style="background:#fef2f2;padding:16px;border-radius:8px;text-align:center;">
+      <p style="margin:0;color:#dc2626;font-size:13px;">Pengeluaran</p>
+      <p style="margin:4px 0 0;font-size:20px;font-weight:700;">${fmt(totalExpense)}</p>
+    </div>
+    <div style="background:#eff6ff;padding:16px;border-radius:8px;text-align:center;">
+      <p style="margin:0;color:#2563eb;font-size:13px;">Laba Bersih</p>
+      <p style="margin:4px 0 0;font-size:20px;font-weight:700;">${fmt(netProfit)}</p>
+    </div>
+  </div>
+  <table style="width:100%;border-collapse:collapse;margin-top:20px;">
+    <thead><tr style="background:#f3f4f6;">
+      <th style="padding:10px;text-align:left;">Tanggal</th>
+      <th style="padding:10px;text-align:left;">Tipe</th>
+      <th style="padding:10px;text-align:left;">Deskripsi</th>
+      <th style="padding:10px;text-align:right;">Jumlah</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+  <p style="margin-top:40px;text-align:center;color:#9ca3af;font-size:12px;">Dibuat oleh Nalar Workspace</p>
+</body></html>`;
+
+    const dateStr = new Date().toISOString().split('T')[0];
+    downloadFile(html, `laporan-keuangan-${dateStr}.html`, 'text/html');
+    setShowExportModal(false);
   };
 
   return (
@@ -74,7 +180,7 @@ export default function FinancePage() {
           <p className="text-gray-500">Pantau pendapatan, pengeluaran, dan arus kas</p>
         </div>
         <div className="flex gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50">
+          <button onClick={() => setShowExportModal(true)} className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50">
             <Download size={18} /> Export
           </button>
           <button onClick={() => setShowAddModal(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
@@ -108,7 +214,7 @@ export default function FinancePage() {
           </div>
           <div className="mt-4">
             <p className="text-2xl font-bold text-gray-800">{fmt(netProfit)}</p>
-            <p className="text-sm text-gray-500 mt-1">Labah Bersih</p>
+            <p className="text-sm text-gray-500 mt-1">Laba Bersih</p>
           </div>
         </div>
       </div>
@@ -130,15 +236,14 @@ export default function FinancePage() {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Transaksi</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kategori</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tanggal</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Jumlah</th>
+              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase w-12"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {filtered.map((t) => (
-              <tr key={t.id} className="hover:bg-gray-50">
+              <tr key={t.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => setDetailTx(t)}>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
                     <div className={`p-2 rounded-lg ${t.type === 'income' ? 'bg-green-50' : 'bg-red-50'}`}>
@@ -150,20 +255,85 @@ export default function FinancePage() {
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-4"><span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-sm">{t.category}</span></td>
                 <td className="px-6 py-4 text-sm text-gray-600">{new Date(t.transaction_date).toLocaleDateString('id-ID')}</td>
-                <td className="px-6 py-4">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${t.status === 'approved' ? 'bg-green-100 text-green-700' : t.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>{t.status}</span>
-                </td>
                 <td className={`px-6 py-4 text-right font-medium ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>{t.type === 'income' ? '+' : '-'}{fmt(t.amount)}</td>
+                <td className="px-6 py-4 text-center">
+                  <Eye size={16} className="text-gray-400 inline" />
+                </td>
               </tr>
             ))}
             {filtered.length === 0 && (
-              <tr><td colSpan={5} className="text-center py-8 text-gray-400">Belum ada transaksi</td></tr>
+              <tr><td colSpan={4} className="text-center py-8 text-gray-400">Belum ada transaksi</td></tr>
             )}
           </tbody>
         </table>
       </div>
+
+      {/* Detail Modal */}
+      {detailTx && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold">Detail Transaksi</h2>
+              <button onClick={() => setDetailTx(null)} className="p-2 hover:bg-gray-100 rounded-lg"><X size={20} /></button>
+            </div>
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
+                <div className={`p-3 rounded-lg ${detailTx.type === 'income' ? 'bg-green-100' : 'bg-red-100'}`}>
+                  {detailTx.type === 'income' ? <TrendingUp className="text-green-500" size={24} /> : <TrendingDown className="text-red-500" size={24} />}
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">{detailTx.type === 'income' ? 'Pendapatan' : 'Pengeluaran'}</p>
+                  <p className={`text-2xl font-bold ${detailTx.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                    {detailTx.type === 'income' ? '+' : '-'}{fmt(detailTx.amount)}
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-gray-400 mb-1">Deskripsi</p>
+                  <p className="font-medium text-gray-800">{detailTx.description}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400 mb-1">Tanggal</p>
+                  <p className="font-medium text-gray-800">{new Date(detailTx.transaction_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Export Date Range Modal */}
+      {showExportModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">Export Laporan</h2>
+              <button onClick={() => setShowExportModal(false)} className="p-2 hover:bg-gray-100 rounded-lg"><X size={20} /></button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Dari Tanggal</label>
+                <input type="date" value={exportRange.start} onChange={(e) => setExportRange({ ...exportRange, start: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Sampai Tanggal</label>
+                <input type="date" value={exportRange.end} onChange={(e) => setExportRange({ ...exportRange, end: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg" />
+              </div>
+              <p className="text-xs text-gray-400">Kosongkan untuk export semua data</p>
+              <div className="flex gap-3 pt-2">
+                <button onClick={exportCsv} className="flex-1 flex items-center justify-center gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50">
+                  <Download size={16} /> CSV
+                </button>
+                <button onClick={exportHtml} className="flex-1 flex items-center justify-center gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50">
+                  <Download size={16} /> HTML
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -182,15 +352,11 @@ export default function FinancePage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Deskripsi</label>
-                <input required value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg" />
+                <input required value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg" placeholder="Contoh: Penjualan produk X" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Jumlah (IDR)</label>
-                <input type="number" required value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
-                <input required value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg" />
+                <input type="number" required min="0" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg" placeholder="0" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Tanggal</label>

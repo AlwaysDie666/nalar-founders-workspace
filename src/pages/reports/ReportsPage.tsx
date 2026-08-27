@@ -3,7 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { supabase } from '../../lib/supabase';
 import { fetchTransactions } from '../../lib/api/transactions';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { TrendingUp, DollarSign, FolderKanban, CheckSquare, Download, Mail } from 'lucide-react';
+import { TrendingUp, DollarSign, FolderKanban, CheckSquare, Download } from 'lucide-react';
 
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
@@ -15,8 +15,6 @@ export default function ReportsPage() {
   const [transactions, setTransactions] = useState<{ type: string; amount: number; transaction_date: string }[]>([]);
   const [projects, setProjects] = useState<{ status: string; name: string }[]>([]);
   const [tasks, setTasks] = useState<{ status: string; priority: string; title: string }[]>([]);
-  const [sending, setSending] = useState(false);
-  const [message, setMessage] = useState('');
 
   const isPrivileged = currentUser?.role === 'ceo' || currentUser?.role === 'coo';
 
@@ -62,39 +60,6 @@ export default function ReportsPage() {
     a.download = `laporan-mingguan-${now.toISOString().split('T')[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-  };
-
-  const sendWeeklyReport = async () => {
-    if (!currentUser) return;
-    setSending(true);
-    setMessage('');
-    try {
-      const { data: cooUsers } = await supabase
-        .from('profiles')
-        .select('email')
-        .in('role', ['ceo', 'coo']);
-
-      if (cooUsers && cooUsers.length > 0) {
-        for (const user of cooUsers) {
-          await fetch('/api/send-email', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              to: user.email,
-              subject: `Laporan Mingguan Nalar Workspace - ${period}`,
-              html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;"><h1 style="color:#1e40af;">Laporan Mingguan</h1><p>Periode: ${period}</p><h2>Tugas</h2><p>Total: ${tasks.length} | Selesai: ${completedTasks}</p><h2>Keuangan</h2><p>Pendapatan: Rp ${totalIncome.toLocaleString('id-ID')}</p><p>Pengeluaran: Rp ${totalExpense.toLocaleString('id-ID')}</p><p>Labah Bersih: Rp ${(totalIncome - totalExpense).toLocaleString('id-ID')}</p><p>Proyek Aktif: ${activeProjects}</p></div>`,
-            }),
-          });
-        }
-        setMessage(`Laporan berhasil dikirim ke ${cooUsers.length} penerima.`);
-      } else {
-        setMessage('Tidak ditemukan user CEO/COO.');
-      }
-    } catch {
-      setMessage('Gagal mengirim email. Pastikan RESEND_API_KEY sudah benar.');
-    } finally {
-      setSending(false);
-    }
   };
 
   const projectStatusData = [
@@ -226,10 +191,6 @@ ${monthlyRows}
               className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl hover:bg-gray-50">
               <Download size={18} /> Unduh CSV
             </button>
-            <button onClick={sendWeeklyReport} disabled={sending}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:bg-blue-400">
-              <Mail size={18} /> {sending ? 'Mengirim...' : 'Kirim Laporan Mingguan'}
-            </button>
             <button onClick={exportReportHtml}
               className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl hover:bg-gray-50">
               <Download size={18} /> HTML
@@ -240,13 +201,7 @@ ${monthlyRows}
             </button>
           </div>
         )}
-      </div>
-
-      {message && (
-        <div className={`px-4 py-3 rounded-xl text-sm ${message.includes('berhasil') ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
-          {message}
         </div>
-      )}
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">

@@ -105,8 +105,8 @@ export default function TasksPage() {
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Manajemen Tugas</h1>
-          <p className="text-gray-500">Kelola dan pantau tugas tim Anda</p>
+          <h1 className="text-2xl font-bold text-gray-800">Tugas Harian</h1>
+          <p className="text-gray-500">Kelola tugas rutin dan sehari-hari</p>
         </div>
         <button onClick={() => setShowAddModal(true)}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
@@ -143,8 +143,8 @@ export default function TasksPage() {
       ) : filteredTasks.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center text-gray-400 py-16">
           <CheckSquare size={48} className="mb-4 text-gray-300" />
-          <p className="text-lg font-medium mb-1">Belum ada tugas</p>
-          <p className="text-sm">Klik "Tambah Tugas" untuk membuat tugas pertama</p>
+          <p className="text-lg font-medium mb-1">Belum ada tugas harian</p>
+          <p className="text-sm">Klik "Tambah Tugas" untuk membuat tugas baru</p>
         </div>
       ) : viewMode === 'kanban' ? (
         <div className="flex-1 overflow-x-auto">
@@ -215,7 +215,7 @@ export default function TasksPage() {
                       </div>
                     ))}
                     {columnTasks.length === 0 && (
-                      <div className="text-center py-8 text-gray-400 text-sm">Belum ada tugas</div>
+                      <div className="text-center py-8 text-gray-400 text-sm">Belum ada tugas di kolom ini</div>
                     )}
                   </div>
                 </div>
