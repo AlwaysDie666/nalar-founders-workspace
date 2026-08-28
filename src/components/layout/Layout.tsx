@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import {
@@ -17,6 +18,7 @@ import {
   Settings,
 } from 'lucide-react';
 import type { UserRole } from '../../types';
+import { supabase } from '../../lib/supabase';
 
 const navItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -49,6 +51,28 @@ export default function Layout({ children }: LayoutProps) {
   const role = currentUser?.role || 'kreatif';
   const roleStyle = roleConfig[role];
 
+  // Red dot indicators
+  const [dotTasks, setDotTasks] = useState(false);
+  const [dotProjects, setDotProjects] = useState(false);
+
+  useEffect(() => {
+    async function fetchDots() {
+      if (!currentUser) return;
+      const { count: taskCount } = await supabase
+        .from('tasks')
+        .select('*', { count: 'exact', head: true })
+        .eq('approval_status', 'pending')
+        .neq('requested_by', currentUser.id);
+      const { count: projectCount } = await supabase
+        .from('projects')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'review');
+      setDotTasks((taskCount ?? 0) > 0);
+      setDotProjects((projectCount ?? 0) > 0);
+    }
+    fetchDots();
+  }, [currentUser, location.pathname]);
+
   return (
     <div className="flex h-screen bg-gray-50">
       <aside className={`${sidebarOpen ? 'w-64' : 'w-[72px]'} bg-white border-r border-gray-200 transition-all duration-300 flex flex-col`}>
@@ -68,7 +92,7 @@ export default function Layout({ children }: LayoutProps) {
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
-            const hasDot = item.path === '/tasks' || item.path === '/projects';
+            const showDot = (item.path === '/tasks' && dotTasks) || (item.path === '/projects' && dotProjects);
             return (
               <Link key={item.path} to={item.path}
                 className={`relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
@@ -76,7 +100,7 @@ export default function Layout({ children }: LayoutProps) {
                 }`}>
                 <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
                 {sidebarOpen && <span>{item.label}</span>}
-                {hasDot && <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full"></span>}
+                {showDot && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>}
               </Link>
             );
           })}

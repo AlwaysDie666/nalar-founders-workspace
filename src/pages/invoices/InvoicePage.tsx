@@ -106,6 +106,7 @@ export default function InvoicePage() {
   const [form, setForm] = useState({ clientName: '', clientEmail: '', clientAddress: '', notes: '' });
   const [selectedProject, setSelectedProject] = useState('');
   const [docType, setDocType] = useState<'invoice' | 'quotation'>('invoice');
+  const [showConvertConfirm, setShowConvertConfirm] = useState(false);
 
   const loadData = async () => {
     try {
@@ -563,7 +564,7 @@ ${doc.notes ? `**Catatan:** ${doc.notes}` : ''}
                 </>
               )}
               {sel.doc_type === 'quotation' && sel.status === 'accepted' && (
-                <button onClick={() => convertToInvoice(sel)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                <button onClick={() => setShowConvertConfirm(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                   <ArrowRight size={18} /> Konversi ke Invoice
                 </button>
               )}
@@ -678,6 +679,35 @@ ${doc.notes ? `**Catatan:** ${doc.notes}` : ''}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showConvertConfirm && sel && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">Konversi ke Invoice?</h2>
+              <button onClick={() => setShowConvertConfirm(false)} className="p-2 hover:bg-gray-100 rounded-lg"><X size={20} /></button>
+            </div>
+            <div className="space-y-3 mb-6">
+              <p className="text-gray-600">Quotation berikut akan dikonversi menjadi invoice baru:</p>
+              <div className="bg-gray-50 rounded-lg p-4 space-y-1">
+                <p className="text-sm"><span className="text-gray-500">Quotation:</span> <span className="font-medium">{sel.invoice_number}</span></p>
+                <p className="text-sm"><span className="text-gray-500">Klien:</span> <span className="font-medium">{sel.client_name}</span></p>
+                <p className="text-sm"><span className="text-gray-500">Total:</span> <span className="font-medium">{fmt(sel.total)}</span></p>
+              </div>
+              <p className="text-sm text-amber-600 bg-amber-50 rounded-lg p-3">
+                Quotation ini akan dihapus dari daftar setelah dikonversi.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setShowConvertConfirm(false)} className="flex-1 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50">Batal</button>
+              <button onClick={async () => { await convertToInvoice(sel); setShowConvertConfirm(false); }}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                Ya, Konversi
+              </button>
+            </div>
           </div>
         </div>
       )}
