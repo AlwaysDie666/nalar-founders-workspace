@@ -23,7 +23,7 @@ export default function FinancePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [detailTx, setDetailTx] = useState<Tx | null>(null);
-  const [form, setForm] = useState({ type: 'income', description: '', amount: '', date: '' });
+  const [form, setForm] = useState({ type: 'income', description: '', amount: '', date: '', category: '' });
 
   // Export date range
   const [showExportModal, setShowExportModal] = useState(false);
@@ -33,8 +33,8 @@ export default function FinancePage() {
     try {
       const data = await fetchTransactions();
       setTransactions(data || []);
-    } catch {
-      // empty
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -57,16 +57,17 @@ export default function FinancePage() {
       await createTransaction({
         type: form.type,
         amount: Number(form.amount),
-        category: '',
+        category: form.category,
         description: form.description,
         transaction_date: form.date,
         status: 'completed',
         created_by: currentUser.id,
       });
       setShowAddModal(false);
-      setForm({ type: 'income', description: '', amount: '', date: '' });
+      setForm({ type: 'income', description: '', amount: '', date: '', category: '' });
       loadData();
     } catch (err) {
+      alert('Gagal membuat transaksi. Silakan coba lagi.');
       console.error(err);
     }
   };
@@ -252,6 +253,7 @@ export default function FinancePage() {
                     <div>
                       <p className="font-medium text-gray-800">{t.description}</p>
                       <p className="text-sm text-gray-500 capitalize">{t.type === 'income' ? 'Pendapatan' : 'Pengeluaran'}</p>
+                      {t.category && <p className="text-xs text-gray-400 capitalize">{t.category}</p>}
                     </div>
                   </div>
                 </td>
@@ -396,6 +398,26 @@ export default function FinancePage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Jumlah (IDR)</label>
                 <input type="number" required min="0" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg" placeholder="0" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
+                <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg">
+                  <option value="">— Pilih Kategori —</option>
+                  <optgroup label="Pendapatan">
+                    <option value="penjualan">Penjualan</option>
+                    <option value="jasa">Jasa</option>
+                    <option value="investasi">Investasi</option>
+                    <option value="lainnya_pendapatan">Lainnya</option>
+                  </optgroup>
+                  <optgroup label="Pengeluaran">
+                    <option value="gaji">Gaji</option>
+                    <option value="sewa">Sewa</option>
+                    <option value="Operasional">Operasional</option>
+                    <option value="pemasaran">Pemasaran</option>
+                    <option value="perlengkapan">Perlengkapan</option>
+                    <option value="lainnya_pengeluaran">Lainnya</option>
+                  </optgroup>
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Tanggal</label>

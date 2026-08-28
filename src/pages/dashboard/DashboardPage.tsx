@@ -9,18 +9,23 @@ const roleLabels: Record<string, string> = {
   cmo: 'Marketing Overview', cfo: 'Financial Overview', coo: 'Operations Overview', kreatif: 'Creative Overview',
 };
 
+const fmt = (amount: number) =>
+  new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
+
 const KPICard = ({ kpi }: { kpi: KPI }) => {
+  const colorClass = kpi.trend === 'up' ? 'text-green-500' : kpi.trend === 'down' ? 'text-red-500' : 'text-blue-500';
+  const bgClass = kpi.trend === 'up' ? 'bg-green-50' : kpi.trend === 'down' ? 'bg-red-50' : 'bg-blue-50';
   const iconMap: Record<string, React.ReactNode> = {
-    dollar: <DollarSign className="text-green-500" size={24} />,
-    folder: <CheckCircle className="text-blue-500" size={24} />,
-    users: <Users className="text-purple-500" size={24} />,
-    clock: <Clock className="text-orange-500" size={24} />,
-    check: <CheckCircle className="text-green-500" size={24} />,
+    dollar: <DollarSign className={colorClass} size={24} />,
+    folder: <CheckCircle className={colorClass} size={24} />,
+    users: <Users className={colorClass} size={24} />,
+    clock: <Clock className={colorClass} size={24} />,
+    check: <CheckCircle className={colorClass} size={24} />,
   };
   return (
     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all">
       <div className="flex items-center justify-between">
-        <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">{iconMap[kpi.icon || 'check']}</div>
+        <div className={`w-12 h-12 rounded-xl ${bgClass} flex items-center justify-center`}>{iconMap[kpi.icon || 'check']}</div>
         {kpi.trend === 'up' && <span className="flex items-center text-green-600 text-sm font-medium"><ArrowUpRight size={16} />{kpi.change}%</span>}
         {kpi.trend === 'down' && <span className="flex items-center text-red-600 text-sm font-medium"><ArrowDownRight size={16} />{Math.abs(kpi.change || 0)}%</span>}
       </div>
@@ -36,22 +41,30 @@ export default function DashboardPage() {
   const { currentUser } = useApp();
   const [tasks, setTasks] = useState<{ id: string; title: string; status: string; priority: string }[]>([]);
   const [projects, setProjects] = useState<{ id: string; name: string; status: string; progress: number }[]>([]);
-  const [userCount, setUserCount] = useState(0);
+  const [totalIncome, setTotalIncome] = useState(0);
+  const [totalExpense, setTotalExpense] = useState(0);
   const role = currentUser?.role || 'ceo';
 
   useEffect(() => {
     supabase.from('tasks').select('id, title, status, priority').then(({ data }) => setTasks(data || []));
     supabase.from('projects').select('id, name, status, progress').then(({ data }) => setProjects(data || []));
-    supabase.from('profiles').select('id', { count: 'exact', head: true }).then(({ count }) => setUserCount(count || 0));
+    supabase.from('transactions').select('type, amount').then(({ data }) => {
+      const txData = data || [];
+      setTotalIncome(txData.filter((t: { type: string; amount: number }) => t.type === 'income').reduce((s: number, t: { type: string; amount: number }) => s + t.amount, 0));
+      setTotalExpense(txData.filter((t: { type: string; amount: number }) => t.type === 'expense').reduce((s: number, t: { type: string; amount: number }) => s + t.amount, 0));
+    });
   }, []);
 
   const inProgress = tasks.filter((t) => t.status === 'in_progress').length;
   const activeProjects = projects.filter((p) => p.status === 'active');
+  const netProfit = totalIncome - totalExpense;
   const kpis: KPI[] = [
     { label: 'Total Tugas', value: tasks.length, icon: 'check', trend: 'neutral', change: 0 },
-    { label: 'Sedang Dikerjakan', value: inProgress, icon: 'clock', trend: inProgress > 0 ? 'up' : 'neutral', change: 0 },
-    { label: 'Proyek Aktif', value: activeProjects.length, icon: 'folder', trend: 'neutral', change: 0 },
-    { label: 'Anggota Tim', value: userCount, icon: 'users', trend: 'neutral', change: 0 },
+    { label: 'Tugas Aktif', value: inProgress, icon: 'clock', trend: inProgress > 0 ? 'up' : 'neutral', change: 0 },
+    { label: 'Proyek Aktif', value: activeProjects.length, icon: 'folder', trend: activeProjects.length > 0 ? 'up' : 'neutral', change: 0 },
+    { label: 'Total Pendapatan', value: fmt(totalIncome), icon: 'dollar', trend: 'up', change: 0 },
+    { label: 'Total Pengeluaran', value: fmt(totalExpense), icon: 'dollar', trend: 'down', change: 0 },
+    { label: 'Laba Bersih', value: fmt(netProfit), icon: 'dollar', trend: netProfit >= 0 ? 'up' : 'down', change: 0 },
   ];
   const now = new Date();
   const hour = now.getHours();
@@ -64,7 +77,7 @@ export default function DashboardPage() {
         <h1 className="text-2xl font-bold">{greeting}, {currentUser?.name || 'User'}!</h1>
         <p className="text-blue-100 mt-1">{roleLabels[role] || 'Dashboard'}</p>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {kpis.map((kpi, i) => <KPICard key={i} kpi={kpi} />)}
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -110,23 +123,28 @@ export default function DashboardPage() {
         </div>
       </div>
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">Ringkasan Cepat</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="text-center p-4 rounded-lg bg-blue-50">
-            <p className="text-3xl font-bold text-blue-600">{tasks.filter(t => t.status === 'in_progress').length}</p>
-            <p className="text-sm text-gray-600 mt-1">Sedang Dikerjakan</p>
+        <h2 className="text-lg font-semibold text-gray-800 mb-4">Ringkasan Keuangan</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="p-4 rounded-lg bg-green-50 border border-green-100">
+            <div className="flex items-center gap-2 mb-2">
+              <ArrowUpRight className="text-green-600" size={20} />
+              <span className="text-sm font-medium text-green-700">Pendapatan</span>
+            </div>
+            <p className="text-2xl font-bold text-green-600">{fmt(totalIncome)}</p>
           </div>
-          <div className="text-center p-4 rounded-lg bg-green-50">
-            <p className="text-3xl font-bold text-green-600">{tasks.filter(t => t.status === 'done').length}</p>
-            <p className="text-sm text-gray-600 mt-1">Selesai</p>
+          <div className="p-4 rounded-lg bg-red-50 border border-red-100">
+            <div className="flex items-center gap-2 mb-2">
+              <ArrowDownRight className="text-red-600" size={20} />
+              <span className="text-sm font-medium text-red-700">Pengeluaran</span>
+            </div>
+            <p className="text-2xl font-bold text-red-600">{fmt(totalExpense)}</p>
           </div>
-          <div className="text-center p-4 rounded-lg bg-yellow-50">
-            <p className="text-3xl font-bold text-yellow-600">{tasks.filter(t => t.status === 'review').length}</p>
-            <p className="text-sm text-gray-600 mt-1">Dalam Review</p>
-          </div>
-          <div className="text-center p-4 rounded-lg bg-purple-50">
-            <p className="text-3xl font-bold text-purple-600">{projects.length}</p>
-            <p className="text-sm text-gray-600 mt-1">Total Proyek</p>
+          <div className={`p-4 rounded-lg border ${netProfit >= 0 ? 'bg-blue-50 border-blue-100' : 'bg-red-50 border-red-100'}`}>
+            <div className="flex items-center gap-2 mb-2">
+              <DollarSign className={netProfit >= 0 ? 'text-blue-600' : 'text-red-600'} size={20} />
+              <span className={`text-sm font-medium ${netProfit >= 0 ? 'text-blue-700' : 'text-red-700'}`}>Laba Bersih</span>
+            </div>
+            <p className={`text-2xl font-bold ${netProfit >= 0 ? 'text-blue-600' : 'text-red-600'}`}>{fmt(netProfit)}</p>
           </div>
         </div>
       </div>

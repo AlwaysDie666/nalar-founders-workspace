@@ -41,8 +41,9 @@ export default function CalendarPage() {
     try {
       const data = await fetchEvents();
       setEvents(data || []);
-    } catch {
-      // empty
+    } catch (err) {
+      alert('Gagal memuat data kalender. Silakan coba lagi.');
+      console.error(err);
     }
   };
 
@@ -84,6 +85,7 @@ export default function CalendarPage() {
       setForm({ title: '', description: '', start_time: '', end_time: '', type: 'meeting' });
       loadEvents();
     } catch (err) {
+      alert('Gagal membuat acara. Silakan coba lagi.');
       console.error(err);
     }
   };

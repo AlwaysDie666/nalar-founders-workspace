@@ -85,7 +85,7 @@ function loadQuotations(): DocRow[] {
   try {
     const raw = localStorage.getItem(QTN_KEY);
     return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
+  } catch (err) { console.error(err); return []; }
 }
 
 function saveQuotations(qtns: DocRow[]) {
@@ -129,7 +129,7 @@ export default function InvoicePage() {
         doc_type: 'invoice' as const,
       })));
       setProjects(projData || []);
-    } catch { /* empty */ }
+    } catch (err) { console.error(err); }
     setQuotations(loadQuotations());
   };
 
@@ -155,7 +155,7 @@ export default function InvoicePage() {
       await updateInvoiceStatus(id, 'paid', new Date().toISOString().split('T')[0]);
       setSel(null);
       loadData();
-    } catch (err) { console.error(err); }
+    } catch (err) { alert('Gagal menandai lunas. Silakan coba lagi.'); console.error(err); }
   };
 
   const setQuotationStatus = (id: string, newStatus: string) => {
@@ -188,7 +188,7 @@ export default function InvoicePage() {
       setQuotations(remaining);
       setSel(null);
       loadData();
-    } catch (err) { console.error(err); }
+    } catch (err) { alert('Gagal mengkonversi quotation. Silakan coba lagi.'); console.error(err); }
   };
 
   const addItem = () => setItems([...items, { description: '', quantity: 1, unit_price: 0, total: 0 }]);
@@ -348,7 +348,7 @@ ${doc.notes ? `**Catatan:** ${doc.notes}` : ''}
         }, filteredItems);
         resetForm();
         loadData();
-      } catch (err) { console.error(err); }
+      } catch (err) { alert('Gagal membuat dokumen. Silakan coba lagi.'); console.error(err); }
     } else {
       const qtnNum = generateDocNumber('QTN', projectName || form.clientName, allDocs);
       const newQtn: DocRow = {
