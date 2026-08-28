@@ -8,11 +8,9 @@ import {
   DollarSign,
   BarChart3,
   Calendar,
-
   FileText,
   Menu,
   X,
-  Bell,
   Search,
   LogOut,
   Shield,
@@ -70,13 +68,15 @@ export default function Layout({ children }: LayoutProps) {
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
+            const hasDot = item.path === '/tasks' || item.path === '/projects';
             return (
               <Link key={item.path} to={item.path}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                className={`relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
                   isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                 }`}>
                 <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
                 {sidebarOpen && <span>{item.label}</span>}
+                {hasDot && <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full"></span>}
               </Link>
             );
           })}
@@ -118,11 +118,6 @@ export default function Layout({ children }: LayoutProps) {
                 <Settings size={20} />
               </Link>
             )}
-
-            <button className="relative p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition">
-              <Bell size={20} />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-            </button>
 
             <div className="w-px h-8 bg-gray-200"></div>
 

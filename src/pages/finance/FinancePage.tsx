@@ -272,32 +272,71 @@ export default function FinancePage() {
       {/* Detail Modal */}
       {detailTx && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md">
+          <div className="bg-white rounded-xl p-6 w-full max-w-lg">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold">Detail Transaksi</h2>
               <button onClick={() => setDetailTx(null)} className="p-2 hover:bg-gray-100 rounded-lg"><X size={20} /></button>
             </div>
-            <div className="space-y-4">
-              <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
-                <div className={`p-3 rounded-lg ${detailTx.type === 'income' ? 'bg-green-100' : 'bg-red-100'}`}>
-                  {detailTx.type === 'income' ? <TrendingUp className="text-green-500" size={24} /> : <TrendingDown className="text-red-500" size={24} />}
+            <div className="space-y-5">
+              {/* Type + Amount hero */}
+              <div className="flex items-center gap-4 p-5 bg-gray-50 rounded-xl">
+                <div className={`p-3 rounded-xl ${detailTx.type === 'income' ? 'bg-green-100' : 'bg-red-100'}`}>
+                  {detailTx.type === 'income' ? <TrendingUp className="text-green-500" size={28} /> : <TrendingDown className="text-red-500" size={28} />}
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">{detailTx.type === 'income' ? 'Pendapatan' : 'Pengeluaran'}</p>
-                  <p className={`text-2xl font-bold ${detailTx.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                  <p className="text-sm text-gray-500 font-medium">{detailTx.type === 'income' ? 'Pendapatan' : 'Pengeluaran'}</p>
+                  <p className={`text-3xl font-bold ${detailTx.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
                     {detailTx.type === 'income' ? '+' : '-'}{fmt(detailTx.amount)}
                   </p>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+
+              {/* Info grid */}
+              <div className="grid grid-cols-2 gap-x-6 gap-y-4">
                 <div>
                   <p className="text-xs text-gray-400 mb-1">Deskripsi</p>
                   <p className="font-medium text-gray-800">{detailTx.description}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-400 mb-1">Tanggal</p>
-                  <p className="font-medium text-gray-800">{new Date(detailTx.transaction_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                  <p className="text-xs text-gray-400 mb-1">Tanggal Transaksi</p>
+                  <p className="font-medium text-gray-800">{new Date(detailTx.transaction_date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
                 </div>
+                <div>
+                  <p className="text-xs text-gray-400 mb-1">Kategori</p>
+                  <p className="font-medium text-gray-800">{detailTx.category || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400 mb-1">Status</p>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${detailTx.status === 'completed' ? 'bg-green-100 text-green-700' : detailTx.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600'}`}>
+                    {detailTx.status === 'completed' ? 'Selesai' : detailTx.status === 'pending' ? 'Menunggu' : detailTx.status}
+                  </span>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => {
+                    const dateStr = new Date(detailTx.transaction_date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+                    const lines = [
+                      'Detail Transaksi',
+                      '',
+                      `Tipe,${detailTx.type === 'income' ? 'Pendapatan' : 'Pengeluaran'}`,
+                      `Jumlah,${detailTx.type === 'income' ? '+' : '-'}${fmt(detailTx.amount)}`,
+                      `Deskripsi,${detailTx.description}`,
+                      `Tanggal,${dateStr}`,
+                      `Kategori,${detailTx.category || '-'}`,
+                      `Status,${detailTx.status}`,
+                    ].join('\n');
+                    downloadFile(lines, `transaksi-${detailTx.id}.csv`, 'text/csv');
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 text-sm font-medium"
+                >
+                  <Download size={16} /> Export Detail
+                </button>
+                <button onClick={() => setDetailTx(null)} className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium">
+                  Tutup
+                </button>
               </div>
             </div>
           </div>
