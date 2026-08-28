@@ -179,7 +179,7 @@ export default function ProjectsPage() {
   const [showAddLogModal, setShowAddLogModal] = useState(false);
 
   // ── Category grouping ──
-  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
+
 
   // ── Log editing ──
   const [editingLogId, setEditingLogId] = useState<string | null>(null);
@@ -237,12 +237,6 @@ export default function ProjectsPage() {
     return 0;
   });
 
-  const groupedProjects = filtered.reduce<Record<string, ProjectRow[]>>((acc, project) => {
-    const cat = project.category || 'general';
-    if (!acc[cat]) acc[cat] = [];
-    acc[cat].push(project);
-    return acc;
-  }, {});
 
   function getProfile(id: string | null): ProfileRow | undefined {
     return profiles.find(p => p.id === id);
@@ -436,14 +430,6 @@ export default function ProjectsPage() {
     }
   }
 
-  function toggleCategoryCollapse(categoryKey: string) {
-    setCollapsedCategories(prev => {
-      const next = new Set(prev);
-      if (next.has(categoryKey)) next.delete(categoryKey);
-      else next.add(categoryKey);
-      return next;
-    });
-  }
 
   function toggleTaskExpand(taskId: string) {
     setExpandedTasks(prev => {
@@ -982,7 +968,7 @@ export default function ProjectsPage() {
         <div className="text-center py-12 text-gray-400">Memuat data...</div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-12 text-gray-400">Belum ada proyek. Klik "Tambah Proyek" untuk membuat baru.</div>
-      ) : filterCategory !== 'all' ? (
+      ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.map(project => {
             const cat = CATEGORY_MAP[project.category] || CATEGORY_MAP.general;
@@ -1025,80 +1011,6 @@ export default function ProjectsPage() {
                   <span>{new Date(project.start_date).toLocaleDateString('id-ID')}</span>
                   {project.end_date && <span> — {new Date(project.end_date).toLocaleDateString('id-ID')}</span>}
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="space-y-8">
-          {Object.entries(groupedProjects).map(([catKey, catProjects]) => {
-            const cat = CATEGORY_MAP[catKey] || CATEGORY_MAP.general;
-            const isCollapsed = collapsedCategories.has(catKey);
-            const avgProgress = catProjects.length > 0
-              ? Math.round(catProjects.reduce((sum, p) => sum + p.progress, 0) / catProjects.length)
-              : 0;
-            return (
-              <div key={catKey} className="space-y-4">
-                <button
-                  onClick={() => toggleCategoryCollapse(catKey)}
-                  className="flex items-center gap-3 w-full text-left group"
-                >
-                  <span className={`px-3 py-1 rounded-lg text-xs font-medium ${cat.color}`}>{cat.label}</span>
-                  <span className="text-sm text-gray-500">{catProjects.length} proyek</span>
-                  <div className="flex-1 flex items-center gap-2 min-w-0">
-                    <div className="flex-1 bg-gray-200 rounded-full h-1.5">
-                      <div className="bg-blue-500 h-1.5 rounded-full transition-all" style={{ width: `${avgProgress}%` }} />
-                    </div>
-                    <span className="text-xs text-gray-400 shrink-0">{avgProgress}%</span>
-                  </div>
-                  <span className="text-gray-400 group-hover:text-gray-600 shrink-0">
-                    {isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
-                  </span>
-                </button>
-                {!isCollapsed && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {catProjects.map(project => {
-                      const status = PROJECT_STATUS_MAP[project.status] || PROJECT_STATUS_MAP.planning;
-                      return (
-                        <div key={project.id} onClick={() => setSelectedProject(project)}
-                          className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
-                          <div className="flex items-start justify-between mb-3">
-                            <div className="p-3 rounded-lg bg-blue-50"><FolderKanban className="text-blue-500" size={24} /></div>
-                            <div className="flex items-center gap-2">
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${status.color}`}>{status.label}</span>
-                              {isAdmin && (
-                                <button onClick={(e) => { e.stopPropagation(); handleDeleteProject(project.id); }}
-                                  className="p-1 hover:bg-red-50 rounded text-gray-400 hover:text-red-500"><Trash2 size={14} /></button>
-                              )}
-                            </div>
-                          </div>
-                          <h3 className="text-lg font-semibold text-gray-800 mb-2">{project.name}</h3>
-                          {project.description && <p className="text-sm text-gray-500 mb-4 line-clamp-2">{project.description}</p>}
-                          <div className="mb-4">
-                            <div className="flex items-center justify-between text-sm mb-1">
-                              <span className="text-gray-600">Progress</span>
-                              <span className="font-medium text-blue-600">{project.progress}%</span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                              <div className="bg-blue-600 h-2 rounded-full transition-all" style={{ width: `${project.progress}%` }} />
-                            </div>
-                          </div>
-                          {project.budget != null && (
-                            <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
-                              <DollarSign size={14} />
-                              <span>{fmt(project.spent || 0)} / {fmt(project.budget)}</span>
-                            </div>
-                          )}
-                          <div className="flex items-center gap-1 text-sm text-gray-500 pt-3 border-t border-gray-100">
-                            <Calendar size={14} />
-                            <span>{new Date(project.start_date).toLocaleDateString('id-ID')}</span>
-                            {project.end_date && <span> — {new Date(project.end_date).toLocaleDateString('id-ID')}</span>}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
               </div>
             );
           })}
