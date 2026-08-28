@@ -37,7 +37,7 @@ export default function AdminPage() {
   const { currentUser } = useApp();
   const [users, setUsers] = useState<ProfileRow[]>([]);
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ email: '', name: '', role: 'kreatif' });
+  const [form, setForm] = useState({ email: '', name: '', role: 'kreatif', password: '' });
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -60,11 +60,14 @@ export default function AdminPage() {
       return;
     }
 
-    // Create auth user with a temporary password
-    const tempPassword = 'Nalar@' + Math.random().toString(36).slice(-6);
+    // Create auth user with admin-provided password
+    if (form.password.length < 6) {
+      setMessage('Password harus minimal 6 karakter.');
+      return;
+    }
     const { data: authData, error: authError } = await getSupabaseAdmin().auth.admin.createUser({
       email: form.email,
-      password: tempPassword,
+      password: form.password,
       email_confirm: true,
     });
 
@@ -79,7 +82,7 @@ export default function AdminPage() {
       email: form.email,
       name: form.name,
       role: form.role,
-      needs_password_change: true,
+      needs_password_change: false,
     });
 
     if (profileError) {
@@ -87,8 +90,8 @@ export default function AdminPage() {
       return;
     }
 
-    setMessage(`Akun berhasil dibuat! Password sementara: ${tempPassword}`);
-    setForm({ email: '', name: '', role: 'kreatif' });
+    setMessage(`Akun berhasil dibuat! Email: ${form.email}`);
+    setForm({ email: '', name: '', role: 'kreatif', password: '' });
     setShowAdd(false);
     loadUsers();
   }
@@ -152,6 +155,13 @@ export default function AdminPage() {
                 <input type="email" required value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <input type="password" required minLength={6} value={form.password}
+                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Minimal 6 karakter" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
